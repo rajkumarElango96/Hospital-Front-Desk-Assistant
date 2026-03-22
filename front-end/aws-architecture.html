@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kyron Medical — AWS Architecture</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0f1117;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 24px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #f8fafc;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 40px;
+      letter-spacing: 0.03em;
+    }
+    .diagram-wrap {
+      width: 100%;
+      max-width: 1080px;
+      overflow-x: auto;
+    }
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* ── Legend ────────────────────────────────────────── */
+    .legend {
+      display: flex;
+      gap: 28px;
+      margin-top: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Kyron Medical — AWS Deployment Architecture</h1>
+  <p class="subtitle">Single EC2 instance · Nginx reverse proxy · MCP over stdio · PostgreSQL local</p>
+
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 1080 680" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Arrow markers -->
+        <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#3b82f6"/>
+        </marker>
+        <marker id="arrow-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#22c55e"/>
+        </marker>
+        <marker id="arrow-orange" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#f97316"/>
+        </marker>
+        <marker id="arrow-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#a855f7"/>
+        </marker>
+        <marker id="arrow-cyan" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#06b6d4"/>
+        </marker>
+        <marker id="arrow-red" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#ef4444"/>
+        </marker>
+
+        <!-- Gradient backgrounds -->
+        <linearGradient id="ec2-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#1a2035;stop-opacity:1"/>
+          <stop offset="100%" style="stop-color:#1a2840;stop-opacity:1"/>
+        </linearGradient>
+        <linearGradient id="nginx-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#1a3a2a;stop-opacity:1"/>
+          <stop offset="100%" style="stop-color:#122b1e;stop-opacity:1"/>
+        </linearGradient>
+        <linearGradient id="fastify-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#1e2d4a;stop-opacity:1"/>
+          <stop offset="100%" style="stop-color:#15223a;stop-opacity:1"/>
+        </linearGradient>
+        <linearGradient id="mcp-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#2a1a3a;stop-opacity:1"/>
+          <stop offset="100%" style="stop-color:#1f1228;stop-opacity:1"/>
+        </linearGradient>
+        <linearGradient id="pg-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#1a2a3a;stop-opacity:1"/>
+          <stop offset="100%" style="stop-color:#0f1e2e;stop-opacity:1"/>
+        </linearGradient>
+      </defs>
+
+      <!-- ════════════════════════════════════════════════════
+           AWS EC2 BOUNDING BOX
+           ════════════════════════════════════════════════════ -->
+      <rect x="260" y="40" width="580" height="610" rx="16"
+            fill="url(#ec2-bg)" stroke="#2563eb" stroke-width="2" stroke-dasharray="8,4" opacity="0.95"/>
+
+      <!-- EC2 label badge -->
+      <rect x="270" y="32" width="160" height="24" rx="6" fill="#2563eb"/>
+      <text x="280" y="48" fill="white" font-size="11" font-weight="700" letter-spacing="0.05em">
+        AWS EC2  ·  Ubuntu 22.04
+      </text>
+      <text x="720" y="48" fill="#3b82f6" font-size="10" font-weight="600">
+        Port 80 / 443 open
+      </text>
+
+      <!-- ── NGINX BOX ─────────────────────────────────── -->
+      <rect x="335" y="75" width="430" height="80" rx="12"
+            fill="url(#nginx-bg)" stroke="#22c55e" stroke-width="1.5"/>
+      <!-- Nginx icon circle -->
+      <circle cx="370" cy="115" r="22" fill="#166534" opacity="0.7"/>
+      <text x="370" y="121" fill="#4ade80" font-size="15" font-weight="800" text-anchor="middle">N</text>
+
+      <text x="405" y="105" fill="#4ade80" font-size="14" font-weight="700">Nginx</text>
+      <text x="405" y="122" fill="#86efac" font-size="11">Reverse proxy · Static file server</text>
+      <text x="405" y="138" fill="#6ee7b7" font-size="10">
+        /  → React build (dist/)    |    /api/*  →  localhost:4000
+      </text>
+
+      <!-- ── FASTIFY BOX ───────────────────────────────── -->
+      <rect x="282" y="200" width="306" height="180" rx="12"
+            fill="url(#fastify-bg)" stroke="#3b82f6" stroke-width="1.5"/>
+
+      <circle cx="316" cy="235" r="20" fill="#1e3a5f" opacity="0.8"/>
+      <text x="316" y="241" fill="#60a5fa" font-size="12" font-weight="800" text-anchor="middle">⚡</text>
+
+      <text x="348" y="228" fill="#60a5fa" font-size="14" font-weight="700">Fastify API</text>
+      <text x="348" y="245" fill="#93c5fd" font-size="10">Node.js · Port 4000 · PM2</text>
+
+      <!-- Route pills -->
+      <rect x="294" y="260" width="135" height="20" rx="5" fill="#1e3a5f"/>
+      <text x="362" y="274" fill="#93c5fd" font-size="10" text-anchor="middle">POST /api/chat/message</text>
+
+      <rect x="294" y="286" width="135" height="20" rx="5" fill="#1e3a5f"/>
+      <text x="362" y="300" fill="#93c5fd" font-size="10" text-anchor="middle">POST /api/voice/call</text>
+
+      <rect x="294" y="312" width="135" height="20" rx="5" fill="#1e3a5f"/>
+      <text x="362" y="326" fill="#93c5fd" font-size="10" text-anchor="middle">POST /api/voice/tool</text>
+
+      <rect x="440" y="260" width="130" height="20" rx="5" fill="#1e3a5f"/>
+      <text x="505" y="274" fill="#93c5fd" font-size="10" text-anchor="middle">POST /api/patients</text>
+
+      <rect x="440" y="286" width="130" height="20" rx="5" fill="#1e3a5f"/>
+      <text x="505" y="300" fill="#93c5fd" font-size="10" text-anchor="middle">GET  /api/slots/available</text>
+
+      <rect x="440" y="312" width="130" height="20" rx="5" fill="#1e3a5f"/>
+      <text x="505" y="326" fill="#93c5fd" font-size="10" text-anchor="middle">GET  /api/prescriptions</text>
+
+      <text x="362" y="360" fill="#475569" font-size="10" text-anchor="middle">+ 3 more endpoints</text>
+
+      <!-- ── MCP SERVER BOX ─────────────────────────────── -->
+      <rect x="282" y="420" width="306" height="130" rx="12"
+            fill="url(#mcp-bg)" stroke="#a855f7" stroke-width="1.5"/>
+
+      <circle cx="318" cy="455" r="20" fill="#3b1f5e" opacity="0.8"/>
+      <text x="318" y="461" fill="#c084fc" font-size="11" font-weight="800" text-anchor="middle">MCP</text>
+
+      <text x="350" y="448" fill="#c084fc" font-size="14" font-weight="700">MCP Server</text>
+      <text x="350" y="465" fill="#d8b4fe" font-size="10">Child process · JSON-RPC 2.0 over stdio</text>
+
+      <rect x="294" y="480" width="125" height="18" rx="4" fill="#2d1b4a"/>
+      <text x="357" y="492" fill="#d8b4fe" font-size="9.5" text-anchor="middle">find_available_slots</text>
+
+      <rect x="294" y="502" width="125" height="18" rx="4" fill="#2d1b4a"/>
+      <text x="357" y="514" fill="#d8b4fe" font-size="9.5" text-anchor="middle">book_appointment</text>
+
+      <rect x="432" y="480" width="130" height="18" rx="4" fill="#2d1b4a"/>
+      <text x="497" y="492" fill="#d8b4fe" font-size="9.5" text-anchor="middle">get_patient_appointments</text>
+
+      <rect x="432" y="502" width="130" height="18" rx="4" fill="#2d1b4a"/>
+      <text x="497" y="514" fill="#d8b4fe" font-size="9.5" text-anchor="middle">cancel_appointment</text>
+
+      <rect x="363" y="524" width="130" height="18" rx="4" fill="#2d1b4a"/>
+      <text x="428" y="536" fill="#d8b4fe" font-size="9.5" text-anchor="middle">get_patient_prescriptions</text>
+
+      <!-- ── POSTGRESQL BOX ─────────────────────────────── -->
+      <rect x="620" y="390" width="200" height="130" rx="12"
+            fill="url(#pg-bg)" stroke="#06b6d4" stroke-width="1.5"/>
+
+      <circle cx="654" cy="425" r="20" fill="#0a3a4a" opacity="0.9"/>
+      <text x="654" y="431" fill="#22d3ee" font-size="13" font-weight="800" text-anchor="middle">🐘</text>
+
+      <text x="685" y="418" fill="#22d3ee" font-size="14" font-weight="700">PostgreSQL</text>
+      <text x="685" y="435" fill="#67e8f9" font-size="10">Port 5432 · Prisma ORM</text>
+
+      <rect x="632" y="450" width="78" height="17" rx="4" fill="#0a3a4a"/>
+      <text x="671" y="462" fill="#67e8f9" font-size="9" text-anchor="middle">Patient</text>
+
+      <rect x="716" y="450" width="78" height="17" rx="4" fill="#0a3a4a"/>
+      <text x="755" y="462" fill="#67e8f9" font-size="9" text-anchor="middle">Provider</text>
+
+      <rect x="632" y="473" width="78" height="17" rx="4" fill="#0a3a4a"/>
+      <text x="671" y="485" fill="#67e8f9" font-size="9" text-anchor="middle">ProviderSlot</text>
+
+      <rect x="716" y="473" width="78" height="17" rx="4" fill="#0a3a4a"/>
+      <text x="755" y="485" fill="#67e8f9" font-size="9" text-anchor="middle">Appointment</text>
+
+      <rect x="674" y="496" width="78" height="17" rx="4" fill="#0a3a4a"/>
+      <text x="713" y="508" fill="#67e8f9" font-size="9" text-anchor="middle">Prescription</text>
+
+      <!-- ════════════════════════════════════════════════════
+           EXTERNAL BOXES (outside EC2)
+           ════════════════════════════════════════════════════ -->
+
+      <!-- PATIENT BROWSER -->
+      <rect x="20" y="75" width="190" height="85" rx="12"
+            fill="#1a1f2e" stroke="#64748b" stroke-width="1.5"/>
+      <circle cx="53" cy="117" r="19" fill="#1e293b" opacity="0.9"/>
+      <text x="53" y="123" fill="#94a3b8" font-size="14" text-anchor="middle">🖥</text>
+      <text x="82" y="108" fill="#e2e8f0" font-size="13" font-weight="700">Patient Browser</text>
+      <text x="82" y="125" fill="#94a3b8" font-size="10">React 18 + Vite</text>
+      <text x="82" y="140" fill="#64748b" font-size="10">Chat UI · Intake form</text>
+
+      <!-- OPENAI -->
+      <rect x="870" y="190" width="180" height="75" rx="12"
+            fill="#1a2e1a" stroke="#22c55e" stroke-width="1.5"/>
+      <circle cx="900" cy="228" r="18" fill="#14532d" opacity="0.8"/>
+      <text x="900" y="234" fill="#4ade80" font-size="13" text-anchor="middle">✦</text>
+      <text x="928" y="220" fill="#4ade80" font-size="13" font-weight="700">OpenAI</text>
+      <text x="928" y="237" fill="#86efac" font-size="10">GPT-4o</text>
+      <text x="928" y="252" fill="#64748b" font-size="9.5">Tool calling loop</text>
+
+      <!-- VAPI.AI -->
+      <rect x="870" y="320" width="180" height="95" rx="12"
+            fill="#2a1a1a" stroke="#f97316" stroke-width="1.5"/>
+      <circle cx="900" cy="360" r="18" fill="#431407" opacity="0.8"/>
+      <text x="900" y="366" fill="#fb923c" font-size="13" text-anchor="middle">📞</text>
+      <text x="928" y="352" fill="#fb923c" font-size="13" font-weight="700">Vapi.ai</text>
+      <text x="928" y="369" fill="#fdba74" font-size="10">Voice AI platform</text>
+      <text x="928" y="384" fill="#64748b" font-size="9.5">Outbound calls</text>
+      <text x="928" y="397" fill="#64748b" font-size="9.5">Tool webhooks → /api/voice/tool</text>
+
+      <!-- GMAIL SMTP -->
+      <rect x="870" y="470" width="180" height="70" rx="12"
+            fill="#2a1a2a" stroke="#ec4899" stroke-width="1.5"/>
+      <circle cx="900" cy="505" r="18" fill="#500724" opacity="0.8"/>
+      <text x="900" y="511" fill="#f472b6" font-size="13" text-anchor="middle">✉</text>
+      <text x="928" y="498" fill="#f472b6" font-size="13" font-weight="700">Gmail SMTP</text>
+      <text x="928" y="515" fill="#f9a8d4" font-size="10">Nodemailer</text>
+      <text x="928" y="530" fill="#64748b" font-size="9.5">Booking confirmation email</text>
+
+      <!-- PATIENT PHONE -->
+      <rect x="20" y="490" width="190" height="70" rx="12"
+            fill="#1a1f2e" stroke="#f97316" stroke-width="1.5"/>
+      <circle cx="53" cy="525" r="19" fill="#1c1a0e" opacity="0.9"/>
+      <text x="53" y="531" fill="#fb923c" font-size="15" text-anchor="middle">📱</text>
+      <text x="82" y="518" fill="#fdba74" font-size="13" font-weight="700">Patient Phone</text>
+      <text x="82" y="535" fill="#94a3b8" font-size="10">Receives Vapi call</text>
+      <text x="82" y="550" fill="#64748b" font-size="9.5">11Labs voice (Bella)</text>
+
+      <!-- ════════════════════════════════════════════════════
+           ARROWS / CONNECTIONS
+           ════════════════════════════════════════════════════ -->
+
+      <!-- Browser → Nginx (HTTP/HTTPS) -->
+      <line x1="210" y1="117" x2="330" y2="117"
+            stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow-blue)"/>
+      <rect x="222" y="104" width="95" height="16" rx="4" fill="#0f172a"/>
+      <text x="270" y="115" fill="#60a5fa" font-size="9.5" text-anchor="middle">HTTPS · Port 80/443</text>
+
+      <!-- Nginx → Fastify (internal proxy) -->
+      <line x1="550" y1="155" x2="440" y2="200"
+            stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)" stroke-dasharray="5,3"/>
+      <text x="510" y="178" fill="#4ade80" font-size="9" text-anchor="middle">/api/* proxy</text>
+
+      <!-- Fastify → OpenAI -->
+      <line x1="588" y1="255" x2="866" y2="255"
+            stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+      <rect x="680" y="244" width="108" height="16" rx="4" fill="#0f172a"/>
+      <text x="734" y="255" fill="#4ade80" font-size="9.5" text-anchor="middle">HTTPS · OpenAI API</text>
+
+      <!-- Fastify → Vapi (initiate call) -->
+      <line x1="588" y1="286" x2="866" y2="350"
+            stroke="#f97316" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
+      <rect x="680" y="302" width="115" height="16" rx="4" fill="#0f172a"/>
+      <text x="737" y="313" fill="#fb923c" font-size="9.5" text-anchor="middle">POST api.vapi.ai/call</text>
+
+      <!-- Vapi → Fastify (tool webhook) -->
+      <line x1="866" y1="395" x2="588" y2="320"
+            stroke="#f97316" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-orange)"/>
+      <rect x="640" y="344" width="115" height="16" rx="4" fill="#0f172a"/>
+      <text x="697" y="355" fill="#fdba74" font-size="9.5" text-anchor="middle">POST /api/voice/tool</text>
+
+      <!-- Fastify → Gmail -->
+      <line x1="588" y1="300" x2="866" y2="490"
+            stroke="#ec4899" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+      <rect x="693" y="382" width="108" height="16" rx="4" fill="#0f172a"/>
+      <text x="747" y="393" fill="#f472b6" font-size="9.5" text-anchor="middle">SMTP Port 587</text>
+
+      <!-- Fastify → MCP Server (stdio) -->
+      <line x1="435" y1="380" x2="435" y2="416"
+            stroke="#a855f7" stroke-width="2" marker-end="url(#arrow-purple)"/>
+      <rect x="446" y="392" width="115" height="16" rx="4" fill="#0f172a"/>
+      <text x="503" y="403" fill="#c084fc" font-size="9.5" text-anchor="middle">JSON-RPC 2.0 · stdio</text>
+
+      <!-- MCP Server → PostgreSQL -->
+      <line x1="588" y1="500" x2="616" y2="480"
+            stroke="#06b6d4" stroke-width="2" marker-end="url(#arrow-cyan)"/>
+      <rect x="588" y="462" width="88" height="16" rx="4" fill="#0f172a"/>
+      <text x="632" y="473" fill="#22d3ee" font-size="9.5" text-anchor="middle">Prisma ORM</text>
+
+      <!-- Vapi → Patient Phone (outbound call) -->
+      <line x1="870" y1="367" x2="215" y2="525"
+            stroke="#f97316" stroke-width="2" marker-end="url(#arrow-orange)"/>
+      <rect x="460" y="456" width="140" height="16" rx="4" fill="#0f172a"/>
+      <text x="530" y="467" fill="#fb923c" font-size="9.5" text-anchor="middle">Outbound phone call (PSTN)</text>
+
+      <!-- ════════════════════════════════════════════════════
+           SECTION LABELS
+           ════════════════════════════════════════════════════ -->
+      <text x="115" y="58" fill="#475569" font-size="10.5" font-weight="600" text-anchor="middle" letter-spacing="0.06em">CLIENT</text>
+      <text x="550" y="30" fill="#3b82f6" font-size="10.5" font-weight="600" text-anchor="middle" letter-spacing="0.06em">AWS INFRASTRUCTURE</text>
+      <text x="960" y="170" fill="#475569" font-size="10.5" font-weight="600" text-anchor="middle" letter-spacing="0.06em">EXTERNAL SERVICES</text>
+
+      <!-- Vertical dividers (subtle) -->
+      <line x1="248" y1="55" x2="248" y2="635" stroke="#1e2a3a" stroke-width="1.5"/>
+      <line x1="855" y1="55" x2="855" y2="635" stroke="#1e2a3a" stroke-width="1.5"/>
+
+      <!-- Bottom caption -->
+      <text x="540" y="668" fill="#334155" font-size="10" text-anchor="middle">
+        Security Groups: port 80 &amp; 443 open to 0.0.0.0/0 · port 4000 + 5432 closed to public · all internal on localhost
+      </text>
+    </svg>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#3b82f6;"></div>
+      HTTPS traffic (browser ↔ Nginx)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#22c55e;"></div>
+      OpenAI API calls
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#f97316;"></div>
+      Vapi voice (initiate + webhook)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#a855f7;"></div>
+      MCP stdio (JSON-RPC 2.0)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#06b6d4;"></div>
+      Prisma → PostgreSQL
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#ec4899;"></div>
+      Gmail SMTP (email)
+    </div>
+  </div>
+
+  <!-- Key notes table -->
+  <div style="max-width:960px; width:100%; margin-top:40px;">
+    <table style="width:100%; border-collapse:collapse; font-size:12px;">
+      <thead>
+        <tr style="border-bottom:1px solid #1e293b;">
+          <th style="text-align:left; padding:8px 12px; color:#64748b; font-weight:600; letter-spacing:0.05em;">COMPONENT</th>
+          <th style="text-align:left; padding:8px 12px; color:#64748b; font-weight:600; letter-spacing:0.05em;">RUNS ON</th>
+          <th style="text-align:left; padding:8px 12px; color:#64748b; font-weight:600; letter-spacing:0.05em;">PORT</th>
+          <th style="text-align:left; padding:8px 12px; color:#64748b; font-weight:600; letter-spacing:0.05em;">NOTES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #0f1923;">
+          <td style="padding:8px 12px; color:#4ade80;">Nginx</td>
+          <td style="padding:8px 12px; color:#94a3b8;">EC2 · systemd</td>
+          <td style="padding:8px 12px; color:#94a3b8;">80 / 443</td>
+          <td style="padding:8px 12px; color:#64748b;">Serves React static files, proxies /api/* to Fastify</td>
+        </tr>
+        <tr style="border-bottom:1px solid #0f1923;">
+          <td style="padding:8px 12px; color:#60a5fa;">Fastify API</td>
+          <td style="padding:8px 12px; color:#94a3b8;">EC2 · PM2</td>
+          <td style="padding:8px 12px; color:#94a3b8;">4000 (internal)</td>
+          <td style="padding:8px 12px; color:#64748b;">Core API — spawns MCP server on startup, never exposed publicly</td>
+        </tr>
+        <tr style="border-bottom:1px solid #0f1923;">
+          <td style="padding:8px 12px; color:#c084fc;">MCP Server</td>
+          <td style="padding:8px 12px; color:#94a3b8;">EC2 · child_process</td>
+          <td style="padding:8px 12px; color:#94a3b8;">stdio only</td>
+          <td style="padding:8px 12px; color:#64748b;">Owns Prisma, runs 5 tools, communicates via JSON-RPC 2.0 newline-delimited</td>
+        </tr>
+        <tr style="border-bottom:1px solid #0f1923;">
+          <td style="padding:8px 12px; color:#22d3ee;">PostgreSQL</td>
+          <td style="padding:8px 12px; color:#94a3b8;">EC2 · systemd</td>
+          <td style="padding:8px 12px; color:#94a3b8;">5432 (internal)</td>
+          <td style="padding:8px 12px; color:#64748b;">Not exposed publicly. 6 models, unique constraint prevents double-booking</td>
+        </tr>
+        <tr style="border-bottom:1px solid #0f1923;">
+          <td style="padding:8px 12px; color:#4ade80;">OpenAI GPT-4o</td>
+          <td style="padding:8px 12px; color:#94a3b8;">External SaaS</td>
+          <td style="padding:8px 12px; color:#94a3b8;">443</td>
+          <td style="padding:8px 12px; color:#64748b;">Full tool-calling loop. All turns sent with complete conversation history</td>
+        </tr>
+        <tr style="border-bottom:1px solid #0f1923;">
+          <td style="padding:8px 12px; color:#fb923c;">Vapi.ai</td>
+          <td style="padding:8px 12px; color:#94a3b8;">External SaaS</td>
+          <td style="padding:8px 12px; color:#94a3b8;">443 + PSTN</td>
+          <td style="padding:8px 12px; color:#64748b;">Outbound voice call + tool webhook POSTs to EC2's /api/voice/tool</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px; color:#f472b6;">Gmail SMTP</td>
+          <td style="padding:8px 12px; color:#94a3b8;">External SaaS</td>
+          <td style="padding:8px 12px; color:#94a3b8;">587 (TLS)</td>
+          <td style="padding:8px 12px; color:#64748b;">Nodemailer. Requires SMTP_USER + SMTP_PASS (Gmail App Password) in .env</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</body>
+</html>

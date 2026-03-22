@@ -1,0 +1,153 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Kyron Medical — Prisma Schema
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Specialty {
+  CARDIOLOGY
+  ORTHOPEDICS
+  DERMATOLOGY
+  NEUROLOGY
+  GENERAL
+}
+
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+  BLOCKED
+}
+
+enum ApptType {
+  TELE
+  IN_PERSON
+}
+
+enum ApptStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum Timezone {
+  AMERICA_NEW_YORK
+  AMERICA_CHICAGO
+  AMERICA_DENVER
+  AMERICA_LOS_ANGELES
+}
+
+// ─── Patient ─────────────────────────────────────────────────────────────────
+
+model Patient {
+  patientId String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName String
+  lastName  String
+  dob       DateTime @db.Date
+  email     String   @unique
+  phone     String?
+
+  // Back-relations
+  appointments Appointment[]
+  visits       VisitHistory[]
+}
+
+// ─── Provider ────────────────────────────────────────────────────────────────
+
+model Provider {
+  providerId        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerFirstName String
+  providerLastName  String
+  npi               String    @unique
+  specialty         Specialty
+
+  // Back-relations
+  slots        ProviderSlot[]
+  appointments Appointment[]
+}
+
+// ─── Provider Slot ───────────────────────────────────────────────────────────
+// provider is a virtual relation field — no DB column, JS navigation only
+// slotStartTime / slotEndTime represent a block e.g. "09:00" → "11:00"
+// @@unique prevents the same provider from having duplicate start times on the same date
+
+model ProviderSlot {
+  slotId        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerId    String     @db.Uuid
+  slotDate      DateTime   @db.Date
+  slotStartTime DateTime   @db.Time
+  slotEndTime   DateTime   @db.Time
+  timezone      Timezone   @default(AMERICA_NEW_YORK)
+  status        SlotStatus @default(AVAILABLE)
+
+  // Relations
+  provider    Provider     @relation(fields: [providerId], references: [providerId])
+  // Back-relation
+  appointment Appointment?
+
+  @@unique([providerId, slotDate, slotStartTime])
+}
+
+// ─── Appointment ─────────────────────────────────────────────────────────────
+// slotId is @unique — one slot can only be booked once
+
+model Appointment {
+  appointmentId     String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId         String     @db.Uuid
+  providerId        String     @db.Uuid
+  slotId            String     @unique @db.Uuid
+  appointmentType   ApptType
+  appointmentDate   DateTime   @db.Date
+  appointmentReason String?
+  apptStatus        ApptStatus @default(PENDING)
+
+  // Relations
+  patient  Patient      @relation(fields: [patientId],  references: [patientId])
+  provider Provider     @relation(fields: [providerId], references: [providerId])
+  slot     ProviderSlot @relation(fields: [slotId],     references: [slotId])
+  // Back-relation
+  visit    VisitHistory?
+}
+
+// ─── Visit History ───────────────────────────────────────────────────────────
+// Populated after a patient completes their appointment
+// appointmentId is @unique — one appointment produces exactly one visit
+
+model VisitHistory {
+  visitId              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId            String   @db.Uuid
+  appointmentId        String   @unique @db.Uuid
+  visitSummary         String?
+  prescriptionProvided Boolean  @default(false)
+
+  // Relations
+  patient     Patient     @relation(fields: [patientId],     references: [patientId])
+  appointment Appointment @relation(fields: [appointmentId], references: [appointmentId])
+  // Back-relation
+  prescriptions Prescription[]
+}
+
+// ─── Prescription ─────────────────────────────────────────────────────────────
+// Prescription holds the FK to VisitHistory — a visit can have many prescriptions
+// nextRefillDate is optional — only relevant when isRefill is true
+
+model Prescription {
+  prescriptionId       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  visitId              String    @db.Uuid
+  prescriptionDate     DateTime  @db.Date
+  prescriptionMedicine String
+  isRefill             Boolean   @default(false)
+  nextRefillDate       DateTime? @db.Date
+
+  // Relations
+  visit VisitHistory @relation(fields: [visitId], references: [visitId])
+}

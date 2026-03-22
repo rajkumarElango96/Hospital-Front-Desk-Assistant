@@ -1,0 +1,228 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Animated background ───────────────────────────────────────────────── */
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%;   }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%;   }
+}
+
+.bg-anim {
+  background: linear-gradient(-45deg, #020817, #0a1628, #0c1a3a, #040d1e, #06101f);
+  background-size: 400% 400%;
+  animation: gradientShift 14s ease infinite;
+}
+
+/* ── Blobs ─────────────────────────────────────────────────────────────── */
+@keyframes blobDrift {
+  0%,100% { transform: translate(0,0)       scale(1);    }
+  33%     { transform: translate(40px,-30px) scale(1.06); }
+  66%     { transform: translate(-25px,20px) scale(0.96); }
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+  animation: blobDrift 16s ease-in-out infinite;
+}
+
+/* ── Glass surfaces ────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(255,255,255,.065);
+  backdrop-filter: blur(32px) saturate(1.5) brightness(1.1);
+  -webkit-backdrop-filter: blur(32px) saturate(1.5) brightness(1.1);
+  border: 1px solid rgba(255,255,255,.13);
+}
+
+.glass-strong {
+  background: rgba(255,255,255,.09);
+  backdrop-filter: blur(48px) saturate(1.8) brightness(1.15);
+  -webkit-backdrop-filter: blur(48px) saturate(1.8) brightness(1.15);
+  border: 1px solid rgba(255,255,255,.16);
+}
+
+/* ── Inputs ────────────────────────────────────────────────────────────── */
+.glass-input {
+  background: rgba(255,255,255,.07);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,.13);
+  color: #f1f5f9;
+  width: 100%;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(99,179,237,.75);
+  box-shadow: 0 0 0 3px rgba(99,179,237,.14), 0 0 22px rgba(99,179,237,.12);
+  background: rgba(255,255,255,.1);
+}
+.glass-input::placeholder { color: rgba(255,255,255,.28); }
+.glass-input::-webkit-calendar-picker-indicator { filter: invert(.6); }
+
+/* ── Checkbox ──────────────────────────────────────────────────────────── */
+.custom-check {
+  appearance: none;
+  width: 17px; height: 17px;
+  border-radius: 5px;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.07);
+  cursor: pointer; flex-shrink: 0;
+  transition: all .18s ease;
+  position: relative;
+}
+.custom-check:checked {
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  border-color: #2563eb;
+}
+.custom-check:checked::after {
+  content: '✓';
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: #fff; font-weight: 700;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+  border: none; cursor: pointer; color: #fff; font-weight: 700;
+  transition: transform .2s, box-shadow .2s, opacity .2s;
+  position: relative; overflow: hidden;
+}
+.btn-primary::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0), rgba(255,255,255,.18));
+  opacity: 0; transition: opacity .2s;
+}
+.btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 28px rgba(37,99,235,.55); }
+.btn-primary:hover::after { opacity: 1; }
+.btn-primary:active:not(:disabled) { transform: translateY(0); }
+.btn-primary:disabled { opacity: .38; cursor: not-allowed; }
+
+.voice-pill {
+  background: rgba(139,92,246,.14);
+  border: 1px solid rgba(139,92,246,.38);
+  transition: all .3s ease; cursor: pointer;
+}
+.voice-pill:hover {
+  background: rgba(139,92,246,.28);
+  border-color: rgba(139,92,246,.75);
+  box-shadow: 0 0 32px rgba(139,92,246,.38);
+}
+
+/* ── Slot cards ────────────────────────────────────────────────────────── */
+.slot-card {
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 13px;
+  cursor: pointer;
+  transition: all .2s ease;
+  user-select: none;
+}
+.slot-card:hover {
+  background: rgba(255,255,255,.1);
+  border-color: rgba(99,179,237,.55);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.28), 0 0 14px rgba(99,179,237,.18);
+}
+.slot-card.picked {
+  background: rgba(37,99,235,.22);
+  border-color: rgba(37,99,235,.85);
+  box-shadow: 0 0 26px rgba(37,99,235,.32);
+  transform: translateY(-1px);
+}
+
+/* ── Quick reply chips ─────────────────────────────────────────────────── */
+.chip {
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 20px;
+  cursor: pointer; white-space: nowrap;
+  transition: all .18s ease; user-select: none;
+}
+.chip:hover {
+  background: rgba(37,99,235,.25);
+  border-color: rgba(37,99,235,.6);
+  box-shadow: 0 0 14px rgba(37,99,235,.22);
+  transform: translateY(-1px);
+}
+
+/* ── Confirmation / SMS cards ──────────────────────────────────────────── */
+.confirm-card {
+  background: rgba(16,185,129,.11);
+  border: 1px solid rgba(16,185,129,.32);
+  border-radius: 16px;
+  box-shadow: 0 0 32px rgba(16,185,129,.14);
+}
+.sms-card {
+  background: rgba(245,158,11,.08);
+  border: 1px solid rgba(245,158,11,.26);
+  border-radius: 12px;
+}
+
+/* ── Animations ────────────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+@keyframes slideDown {
+  from { opacity:0; transform: translateY(-16px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+@keyframes confirmPop {
+  0%  { transform: scale(.93); opacity:0; }
+  60% { transform: scale(1.02); }
+  100%{ transform: scale(1);   opacity:1; }
+}
+@keyframes typingBounce {
+  0%,60%,100% { transform: translateY(0);    opacity:.35; }
+  30%         { transform: translateY(-5px); opacity:1;   }
+}
+@keyframes ringPulse {
+  0%   { transform: scale(1);  opacity:.75; }
+  100% { transform: scale(2);  opacity:0;   }
+}
+@keyframes spinnerRing { to { transform: rotate(360deg); } }
+@keyframes glowPulse {
+  0%,100% { box-shadow: 0 0 20px rgba(37,99,235,.35); }
+  50%     { box-shadow: 0 0 45px rgba(37,99,235,.7);  }
+}
+
+.fade-up    { animation: fadeUp    .45s cubic-bezier(.16,1,.3,1) both; }
+.fade-in    { animation: fadeIn    .3s ease both; }
+.slide-down { animation: slideDown .4s  cubic-bezier(.16,1,.3,1) both; }
+.confirm-pop{ animation: confirmPop .5s cubic-bezier(.16,1,.3,1) both; }
+.glow-logo  { animation: glowPulse 3s ease-in-out infinite; }
+
+/* ── Typing dots ───────────────────────────────────────────────────────── */
+.tdot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255,255,255,.55);
+  animation: typingBounce 1.3s ease-in-out infinite;
+}
+.tdot:nth-child(2) { animation-delay: .16s; }
+.tdot:nth-child(3) { animation-delay: .32s; }
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────── */
+.msgs::-webkit-scrollbar { width: 4px; }
+.msgs::-webkit-scrollbar-track { background: transparent; }
+.msgs::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 4px; }
+
+/* ── Intake collapse ───────────────────────────────────────────────────── */
+.intake-wrap {
+  transition: max-height .5s cubic-bezier(.16,1,.3,1), opacity .4s ease, transform .4s ease;
+  overflow: hidden;
+}
+.intake-wrap.open   { max-height: 700px; opacity:1; transform:translateY(0); }
+.intake-wrap.closed { max-height: 0;     opacity:0; transform:translateY(-10px); pointer-events:none; }
