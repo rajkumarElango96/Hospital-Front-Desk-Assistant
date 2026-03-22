@@ -18,7 +18,7 @@ const { spawn }  = require('child_process')
 const path       = require('path')
 const readline   = require('readline')
 
-const MCP_SERVER_PATH = path.join(__dirname, '../mcp/kyron-medical-server.js')
+const MCP_SERVER_PATH = path.join(__dirname, '../mcp/kyron-medical-server.mjs')
 
 // ── Singleton State ────────────────────────────────────────────────────────────
 
