@@ -74,7 +74,7 @@ export function ChatScreen({ patient }) {
   const now = () => new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
 
   const addMsg = (msg) =>
-    setMessages(ms => [...ms, { id: crypto.randomUUID(), time: now(), ...msg }]);
+    setMessages(ms => [...ms, { id: Math.random().toString(36).substring(2) + Date.now().toString(36), time: now(), ...msg }]);
 
   /* ── Greeting on mount — ref guard prevents StrictMode double-fire ── */
   useEffect(() => {
