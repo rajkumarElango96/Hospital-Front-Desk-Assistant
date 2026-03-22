@@ -3,22 +3,22 @@
 /**
  * Kyron Medical — Email Utility
  *
- * Sends appointment confirmation emails via nodemailer (Gmail SMTP).
+ * Sends appointment confirmation emails via nodemailer + AWS SES (SMTP).
  *
  * Required .env vars:
- *   SMTP_USER   — your Gmail address       e.g. yourname@gmail.com
- *   SMTP_PASS   — Gmail App Password       (not your normal password)
- *                 Generate at: Google Account → Security → App Passwords
- *   SMTP_FROM   — display name + address   e.g. "Kyron Medical <yourname@gmail.com>"
- *
- * To use a different provider (SendGrid, Mailgun, etc.) swap the `transporter`
- * config — the rest of the file stays the same.
+ *   SMTP_HOST   — SES regional endpoint   e.g. email-smtp.us-east-1.amazonaws.com
+ *   SMTP_USER   — SES SMTP username       (IAM access key style, from SES console)
+ *   SMTP_PASS   — SES SMTP password       (from SES console — shown only once)
+ *   SMTP_FROM   — verified sender address e.g. "Kyron Medical <you@gmail.com>"
+ *                 Must be a verified identity in AWS SES
  */
 
 const nodemailer = require('nodemailer')
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host:   process.env.SMTP_HOST,
+  port:   587,
+  secure: false,           // TLS via STARTTLS on port 587
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,

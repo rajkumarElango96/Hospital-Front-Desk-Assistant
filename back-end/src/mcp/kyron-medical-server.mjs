@@ -8,10 +8,15 @@
  * Runs as a child process spawned by src/services/mcp-client.js.
  */
 
-import { McpServer }         from '@modelcontextprotocol/sdk/server/mcp.js'
+import { McpServer }           from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { z }                 from 'zod'
-import { PrismaClient }      from '@prisma/client'
+import { z }                    from 'zod'
+import { PrismaClient }         from '@prisma/client'
+import { createRequire }        from 'module'
+
+// mailer.js is CommonJS — use createRequire to import it from ESM
+const require = createRequire(import.meta.url)
+const { sendConfirmationEmail } = require('../utils/mailer.js')
 
 const prisma = new PrismaClient()
 
@@ -110,6 +115,10 @@ server.tool(
           data:  { status: 'BOOKED' },
         }),
       ])
+      // Fire confirmation email automatically — non-blocking, don't fail booking if email fails
+      sendConfirmationEmail(appointment).catch((e) =>
+        console.error('[MAILER] Failed to send confirmation email:', e.message)
+      )
       return { content: [{ type: 'text', text: JSON.stringify({ success: true, appointment }) }] }
     } catch (err) {
       const error = err.code === 'P2002'
